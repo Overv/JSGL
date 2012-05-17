@@ -84,7 +84,7 @@ GL.Context = function( w, h )
 
 	// Initialize rest of the state
 	this.bufColorClear = [ 0.0, 0.0, 0.0, 1.0 ];
-	this.bufDepthClear = 1000.0;
+	this.bufDepthClear = 1.0;
 
 	this.beginMode = -1;
 	this.beginColor = [ 1.0, 1.0, 1.0, 1.0 ];
@@ -221,15 +221,26 @@ GL.Context.prototype.end = function()
 		return null;
 	}
 
+	var transform = mat4.create();
+	mat4.multiply( this.matProj, this.matModelView, transform );
+
 	// Transform vertices and map them to window coordinates
 	for ( var i = 0; i < this.beginVertices.length; i++ ) {
 		var vertex = this.beginVertices[i];
 
-		mat4.multiplyVec3( this.matModelView, vertex );
+		// Multiply vec by modelview and projection matrices
+		var vec = [ vertex[0], vertex[1], vertex[2], 1 ];
+		mat4.multiplyVec4( transform, vec );
 
-		vertex[0] = (vertex[0]+1)/2*w;
-		vertex[1] = (1-vertex[1])/2*h;
-		vertex[2] = -vertex[2];
+		// Calculate normalized device coordinates
+		var norm = [];
+		norm[0] = vec[0] / vec[3];
+		norm[1] = vec[1] / vec[3];
+		norm[2] = vec[2] / vec[3];
+
+		vertex[0] = (norm[0]+1)/2*w;
+		vertex[1] = (1-norm[1])/2*h;
+		vertex[2] = norm[2];
 
 		this.beginVertices[i] = vertex;
 	}
