@@ -53,53 +53,66 @@ These functions are currently implemented:
 
 ### gl.getError()
 > Returns any errors caused by the last function call.
+
 ### gl.clearColor(`r`, `g`, `b`, `a`)
 > Set the color buffer clear color.
 >
 > **r, g, b**: Color components
 > **a**: Alpha component
+
 ### gl.clear(`mask`)
 > Clears one or more buffers.
 >
 > **mask**: Bitfield of buffers to clear
+
 ### gl.begin(`mode`)
 > Start specification of vertices belonging to a group of primitives.
 >
 > **mode**: Primitives to draw
+
 ### gl.end()
 > Finish specification of vertices.
+
 ### gl.color4f(`r`, `g`, `b`, `a`)
 > Set the current color.
 >
 > **r, g, b**: Color components
 > **a**: Alpha component
+
 ### gl.color3f(`r`, `g`, `b`)
 > Sets the current color with implicit alpha of 1.0.
 >
 > **r, g, b**: Color components
+
 ### gl.vertex3f(`x`, `y`, `z`)
 > Specify a vertex.
 >
 > **x, y, z**: Coordinates of the vertex
+
 ### gl.matrixMode(`mode`)
 > Specify which matrix to apply operations on.
 >
 > **mode**: Matrix to make current
+
 ### gl.loadIdentity()
 > Replaces the current matrix with the identity matrix.
+
 ### gl.translatef(`x`, `y`, `z`)
 > Multiplies the current matrix by a translation matrix.
 >
 > **x, y, z**: Coordinates to translate by
+
 ### gl.scalef(`x`, `y`, `z`)
 > Multiplies the current matrix by a scale matrix.
 >
 > **x, y, z**: Factors to scale each axis by
+
 ### gl.rotatef(`angle`, `x`, `y`, `z`)
 > Multiplies the current matrix by a rotation matrix.
 >
 > **angle**: Angle in radians to rotate by
 > **x, y, z**: Axis to rotate around
+
 ### gl.readPixels(`x`, `y`, `w`, `h`, `format`, `type`, `data`)
 > Reads pixels from the color buffer and returns them as an array.
 >
