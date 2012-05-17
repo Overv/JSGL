@@ -17,7 +17,7 @@ Before you can start drawing, you will have to create a graphics context by call
 
 You can then start using it by calling the functions that are currently available the same way as you would with a hardware implementation.
 
-To draw the classic red, blue and green rectangle on a black background:
+To draw the classic red, blue and green triangle on a black background:
 
 	gl.clearColor( 0.0, 0.0, 0.0, 1.0 );
 	gl.clear( GL.COLOR_BUFFER_BIT );
@@ -144,7 +144,7 @@ These functions are currently implemented:
 > **up**: Up direction
 
 ### gl.readPixels(`x`, `y`, `w`, `h`, `format`, `type`, `data`)
-> Reads pixels from the color buffer and returns them as an array.
+> Reads pixels from a buffer and returns them as an array.
 >
 > **x, y**: Window coordinates of the area you want to capture.
 > **w, h**: Size of the area you want to capture.
@@ -178,6 +178,7 @@ These values are available for the parameters of these functions:
 	GL.PROJECTION			= 0x1701;
 
 	// Pixel formats
+	GL.DEPTH_COMPONENT		= 0x1902;
 	GL.RGBA					= 0x1908;
 
 	// Buffers

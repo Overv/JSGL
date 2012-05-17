@@ -51,6 +51,7 @@ GL.MODELVIEW			= 0x1700;
 GL.PROJECTION			= 0x1701;
 
 // Pixel formats
+GL.DEPTH_COMPONENT		= 0x1902;
 GL.RGBA					= 0x1908;
 
 // Buffers
@@ -235,13 +236,13 @@ GL.Context.prototype.end = function()
 
 	// Assemble primitives
 	if ( this.beginMode == GL.POINTS )
-		for ( var i = 0; i < this.beginVertices.length; i += 1 ) drawPoint( this.beginVertices[i], this.bufColor, this.bufDepth, this.w, this.h, this );
+		for ( var i = 0; i < this.beginVertices.length; i += 1 ) drawPoint( this.beginVertices[i], this.bufColor, this.bufDepth, this );
 	else if ( this.beginMode == GL.LINES && this.beginVertices.length >= 2 )
-		for ( var i = 0; i < this.beginVertices.length; i += 2 ) drawLine( [ this.beginVertices[i], this.beginVertices[i+1] ], this.bufColor, this.bufDepth, this.w, this.h, this );
+		for ( var i = 0; i < this.beginVertices.length; i += 2 ) drawLine( [ this.beginVertices[i], this.beginVertices[i+1] ], this.bufColor, this.bufDepth, this );
 	else if ( this.beginMode == GL.TRIANGLES && this.beginVertices.length >= 3 )
-		for ( var i = 0; i < this.beginVertices.length; i += 3 ) drawTriangle( [ this.beginVertices[i], this.beginVertices[i+1], this.beginVertices[i+2] ], this.bufColor, this.bufDepth, this.w, this.h, this );
+		for ( var i = 0; i < this.beginVertices.length; i += 3 ) drawTriangle( [ this.beginVertices[i], this.beginVertices[i+1], this.beginVertices[i+2] ], this.bufColor, this.bufDepth, this );
 	else if ( this.beginMode == GL.QUADS && this.beginVertices.length >= 4 )
-		for ( var i = 0; i < this.beginVertices.length; i += 4 ) drawQuad( [ this.beginVertices[i], this.beginVertices[i+1], this.beginVertices[i+2], this.beginVertices[i+3] ], this.bufColor, this.bufDepth, this.w, this.h, this );
+		for ( var i = 0; i < this.beginVertices.length; i += 4 ) drawQuad( [ this.beginVertices[i], this.beginVertices[i+1], this.beginVertices[i+2], this.beginVertices[i+3] ], this.bufColor, this.bufDepth, this );
 
 	this.beginMode = -1;
 	this.beginVertices = null;
@@ -370,7 +371,7 @@ GL.Context.prototype.lookAt = function( eyeX, eyeY, eyeZ, centerX, centerY, cent
 };
 
 /*
-	Reads pixels from the color buffer and returns them as an array.
+	Reads pixels from a buffer and returns them as an array.
 
 	x, y	Window coordinates of the area you want to capture.
 	w, h	Size of the area you want to capture.
@@ -382,7 +383,7 @@ GL.Context.prototype.readPixels = function( x, y, w, h, format, type, data )
 		this.err = GL.INVALID_OPERATION;
 		return null;
 	}
-	if ( format != GL.RGBA || ( type != GL.BYTE && type != GL.FLOAT ) ) {
+	if ( ( format != GL.RGBA && format != GL.DEPTH_COMPONENT ) || ( type != GL.BYTE && type != GL.FLOAT ) ) {
 		this.err = GL.INVALID_ENUM;
 		return null;
 	}
@@ -391,13 +392,18 @@ GL.Context.prototype.readPixels = function( x, y, w, h, format, type, data )
 		return null;
 	}
 
-	var size = this.w*this.h*4;
-	for ( var i = 0; i < size; i += 4 )
-	{
-		data[i+0] = this.bufColor[i+0] * ( type == GL.BYTE ? 255 : 1 );
-		data[i+1] = this.bufColor[i+1] * ( type == GL.BYTE ? 255 : 1 );
-		data[i+2] = this.bufColor[i+2] * ( type == GL.BYTE ? 255 : 1 );
-		data[i+3] = this.bufColor[i+3] * ( type == GL.BYTE ? 255 : 1 );
+	if ( format == GL.RGBA ) {
+		var size = this.w*this.h*4;
+		for ( var i = 0; i < size; i += 4 ) {
+			data[i+0] = this.bufColor[i+0] * ( type == GL.BYTE ? 255 : 1 );
+			data[i+1] = this.bufColor[i+1] * ( type == GL.BYTE ? 255 : 1 );
+			data[i+2] = this.bufColor[i+2] * ( type == GL.BYTE ? 255 : 1 );
+			data[i+3] = this.bufColor[i+3] * ( type == GL.BYTE ? 255 : 1 );
+		}
+	} else {
+		var size = this.w*this.h;
+		for ( var i = 0; i < size; i++ )
+			data[i+0] = this.bufDepth[i] * ( type == GL.BYTE ? 255 : 1 );
 	}
 };
 
@@ -405,26 +411,26 @@ GL.Context.prototype.readPixels = function( x, y, w, h, format, type, data )
 	Draw a point to the specified pixel array.
 */
 
-function drawPoint( p, data, depth, w, h, gl )
+function drawPoint( p, color, depth, gl )
 {
-	var o = (Math.floor(p[0])+Math.floor(p[1])*w)*4;
+	var o = (Math.floor(p[0])+Math.floor(p[1])*gl.w)*4;
 
 	if ( gl.depthEnabled ) {
 		if ( ic0*p[0][2]+ic1*p[1][2]+ic2*p[2][2] > depth[o/4] ) continue;
 		else depth[o/4] = 0.0;
 	}
 
-	data[o+0] = p[3][0];
-	data[o+1] = p[3][1];
-	data[o+2] = p[3][2];
-	data[o+3] = p[3][3];
+	color[o+0] = p[3][0];
+	color[o+1] = p[3][1];
+	color[o+2] = p[3][2];
+	color[o+3] = p[3][3];
 }
 
 /*
 	Draw a line to the specified pixel array.
 */
 
-function drawLine( p, data, depth, w, h, gl )
+function drawLine( p, color, depth, gl )
 {
 	var x0 = Math.floor( p[0][0] );
 	var y0 = Math.floor( p[0][1] );
@@ -450,10 +456,10 @@ function drawLine( p, data, depth, w, h, gl )
 			else depth[o/4] = 0.0;
 		}
 
-		data[o+0] = ic0 * p[0][3][0] + ic1 * p[1][3][0];
-		data[o+1] = ic0 * p[0][3][1] + ic1 * p[1][3][1];
-		data[o+2] = ic0 * p[0][3][2] + ic1 * p[1][3][2];
-		data[o+3] = ic0 * p[0][3][3] + ic1 * p[1][3][3];
+		color[o+0] = ic0 * p[0][3][0] + ic1 * p[1][3][0];
+		color[o+1] = ic0 * p[0][3][1] + ic1 * p[1][3][1];
+		color[o+2] = ic0 * p[0][3][2] + ic1 * p[1][3][2];
+		color[o+3] = ic0 * p[0][3][3] + ic1 * p[1][3][3];
 
 		if ( x0 == x1 && y0 == y1 ) break;
 
@@ -473,7 +479,7 @@ function drawLine( p, data, depth, w, h, gl )
 	Draw a triangle to the specified pixel array.
 */
 
-function drawTriangle( p, data, depth, w, h, gl )
+function drawTriangle( p, color, depth, gl )
 {
 	var x1 = Math.floor( p[0][0] );
 	var x2 = Math.floor( p[1][0] );
@@ -506,10 +512,10 @@ function drawTriangle( p, data, depth, w, h, gl )
 				else depth[o/4] = 0.0;
 			}
 
-			data[o+0] = ic0 * p[0][3][0] + ic1 * p[1][3][0] + ic2 * p[2][3][0];
-			data[o+1] = ic0 * p[0][3][1] + ic1 * p[1][3][1] + ic2 * p[2][3][1];
-			data[o+2] = ic0 * p[0][3][2] + ic1 * p[1][3][2] + ic2 * p[2][3][2];
-			data[o+3] = ic0 * p[0][3][3] + ic1 * p[1][3][3] + ic2 * p[2][3][3];
+			color[o+0] = ic0 * p[0][3][0] + ic1 * p[1][3][0] + ic2 * p[2][3][0];
+			color[o+1] = ic0 * p[0][3][1] + ic1 * p[1][3][1] + ic2 * p[2][3][1];
+			color[o+2] = ic0 * p[0][3][2] + ic1 * p[1][3][2] + ic2 * p[2][3][2];
+			color[o+3] = ic0 * p[0][3][3] + ic1 * p[1][3][3] + ic2 * p[2][3][3];
 		}
 	}
 }
@@ -518,10 +524,10 @@ function drawTriangle( p, data, depth, w, h, gl )
 	Draw a quad to the specified pixel array.
 */
 
-function drawQuad( p, data, depth, w, h, gl )
+function drawQuad( p, color, depth, gl )
 {
-	drawTriangle( [ p[0], p[1], p[2] ], data, depth, w, h, gl );
-	drawTriangle( [ p[2], p[3], p[0] ], data, depth, w, h, gl );
+	drawTriangle( [ p[0], p[1], p[2] ], color, depth, gl );
+	drawTriangle( [ p[2], p[3], p[0] ], color, depth, gl );
 }
 
 /*
