@@ -53,6 +53,7 @@
 			// Create OpenGL context
 			var gl = new GL.Context( w, h );
 			gl.enable( GL.DEPTH_TEST );
+			gl.enable( GL.CULL_FACE );
 
 			// Draw animation
 			var buf = ctx.createImageData( w, h );
@@ -81,10 +82,10 @@
 					gl.vertex3f( -0.5, -0.5, 0.0 );
 
 					gl.color3f( 0.0, 1.0, 0.0 );
-					gl.vertex3f( -0.5, 0.5, -0.5 );
-					gl.vertex3f( 0.5, 0.5, -0.5 );
-					gl.vertex3f( 0.5, -0.5, -0.5 );
 					gl.vertex3f( -0.5, -0.5, -0.5 );
+					gl.vertex3f( 0.5, -0.5, -0.5 );
+					gl.vertex3f( 0.5, 0.5, -0.5 );
+					gl.vertex3f( -0.5, 0.5, -0.5 );
 				gl.end();
 
 				// Draw frame buffer to canvas

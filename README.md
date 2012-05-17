@@ -168,6 +168,7 @@ These values are available for the parameters of these functions:
 
 	// Features
 	GL.DEPTH_TEST			= 0x0B71;
+	GL.CULL_FACE			= 0x0B44;
 
 	// Types
 	GL.BYTE					= 0x1400;

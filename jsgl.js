@@ -41,6 +41,7 @@ GL.INVALID_OPERATION	= 0x0502;
 
 // Features
 GL.DEPTH_TEST			= 0x0B71;
+GL.CULL_FACE			= 0x0B44;
 
 // Types
 GL.BYTE					= 0x1400;
@@ -89,8 +90,7 @@ GL.Context = function( w, h )
 	this.beginMode = -1;
 	this.beginColor = [ 1.0, 1.0, 1.0, 1.0 ];
 	this.depthEnabled = false;
-	this.near = 0;
-	this.far = 1;
+	this.cullingEnabled = false;
 };
 
 /*
@@ -103,12 +103,13 @@ GL.Context.prototype.enable = function( capability )
 		this.err = GL.INVALID_OPERATION;
 		return null;
 	}
-	if ( capability != GL.DEPTH_TEST ) {
+	if ( capability != GL.DEPTH_TEST && capability != GL.CULL_FACE ) {
 		this.err = GL.INVALID_ENUM;
 		return null;
 	}
 
 	if ( capability == GL.DEPTH_TEST ) this.depthEnabled = true;
+	else if ( capability == GL.CULL_FACE ) this.cullingEnabled = true;
 };
 
 GL.Context.prototype.disable = function( capability )
@@ -117,12 +118,13 @@ GL.Context.prototype.disable = function( capability )
 		this.err = GL.INVALID_OPERATION;
 		return null;
 	}
-	if ( capability != GL.DEPTH_TEST ) {
+	if ( capability != GL.DEPTH_TEST && capability != GL.CULL_FACE ) {
 		this.err = GL.INVALID_ENUM;
 		return null;
 	}
 
 	if ( capability == GL.DEPTH_TEST ) this.depthEnabled = false;
+	else if ( capability == GL.CULL_FACE ) this.cullingEnabled = false;
 };
 
 /*
@@ -221,16 +223,28 @@ GL.Context.prototype.end = function()
 		return null;
 	}
 
-	var transform = mat4.create();
-	mat4.multiply( this.matProj, this.matModelView, transform );
-
 	// Transform vertices and map them to window coordinates
 	for ( var i = 0; i < this.beginVertices.length; i++ ) {
 		var vertex = this.beginVertices[i];
 
-		// Multiply vec by modelview and projection matrices
+		// Transform vertex into eye space
 		var vec = [ vertex[0], vertex[1], vertex[2], 1 ];
-		mat4.multiplyVec4( transform, vec );
+		mat4.multiplyVec4( this.matModelView, vec );
+
+		// Perform backface culling - if enabled
+		if ( this.cullingEnabled && ( ( this.beginMode == GL.QUADS && i % 4 == 0 ) || ( this.beginMode == GL.TRIANGLES && i % 3 == 0 ) ) ) {
+			var side1 = vec3.create();
+			vec3.subtract( this.beginVertices[i], this.beginVertices[i+1], side1 );
+			var side2 = vec3.create();
+			vec3.subtract( this.beginVertices[i], this.beginVertices[i+2], side2 );
+			var normal = vec3.create();
+			vec3.cross( side1, side2, normal );
+			var dot = vec3.dot( normal, this.beginVertices[i] );
+			vertex[4] = dot <= 0; // If dot > 0, then face is facing away from camera
+		}
+
+		// Transform vertex into clip space
+		mat4.multiplyVec4( this.matProj, vec );
 
 		// Calculate normalized device coordinates
 		var norm = [];
@@ -367,8 +381,6 @@ GL.Context.prototype.rotatef = function( angle, x, y, z )
 
 GL.Context.prototype.perspective = function( fovy, aspect, near, far )
 {
-	this.near = near;
-	this.far = far;
 	mat4.perspective( fovy, aspect, near, far, this.curMatrix );
 };
 
@@ -492,6 +504,8 @@ function drawLine( p, color, depth, gl )
 
 function drawTriangle( p, color, depth, gl )
 {
+	if ( gl.cullingEnabled && !p[0][4] ) return;
+
 	var x1 = Math.floor( p[0][0] );
 	var x2 = Math.floor( p[1][0] );
 	var x3 = Math.floor( p[2][0] );
@@ -537,6 +551,11 @@ function drawTriangle( p, color, depth, gl )
 
 function drawQuad( p, color, depth, gl )
 {
+	if ( gl.cullingEnabled ) {
+		if ( !p[0][4] ) return;
+		p[2][4] = true; // Or drawTriangle will think the second triangle making the quad is culled
+	}
+
 	drawTriangle( [ p[0], p[1], p[2] ], color, depth, gl );
 	drawTriangle( [ p[2], p[3], p[0] ], color, depth, gl );
 }
