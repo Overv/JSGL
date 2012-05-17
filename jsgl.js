@@ -348,7 +348,6 @@ function drawLine( p, data, w, h )
 
 	while ( true )
 	{
-		// TODO: Interpolate between p0 and p1
 		var ic0 = 1.0 - Math.abs( dx > dy ? ( x1 - x0 ) : ( y1 - y0 ) ) / totDist;
 		var ic1 = 1.0 - ic0;
 		var o = (x0+y0*w)*4;
@@ -373,52 +372,39 @@ function drawLine( p, data, w, h )
 
 /*
 	Draw a triangle to the specified pixel array.
-	TODO: Write a better implementation of this asap.
 */
 
 function drawTriangle( p, data, w, h )
 {
-	// Find leftmost, middle and rightmost points
-	var pL = 0; if ( p[1][0] < p[pL][0] ) pL = 1; if ( p[2][0] < p[pL][0] ) pL = 2;
-	var pR = 0; if ( p[1][0] > p[pR][0] && pL ) pR = 1; if ( p[2][0] > p[pR][0] ) pR = 2;
-	var pM = 0; if ( pL == 0 || pR == 0 ) pM = 1; if ( pL == 1 || pR == 1 ) pM = 2;
-	pL = p[pL];
-	pR = p[pR];
-	pM = p[pM];
+	var x1 = Math.floor( p[0][0] );
+	var x2 = Math.floor( p[1][0] );
+	var x3 = Math.floor( p[2][0] );
+	var y1 = Math.floor( p[0][1] );
+	var y2 = Math.floor( p[1][1] );
+	var y3 = Math.floor( p[2][1] );
 
-	// Find parameters of left, right and bottom sides
-	dL = ( pL[1] - pM[1] ) / ( pL[0] - pM[0] ); L0 = pL[1] - pL[0] * dL;
-	dR = ( pM[1] - pR[1] ) / ( pM[0] - pR[0] ); R0 = pM[1] - pM[0] * dR;
-	dB = ( pL[1] - pR[1] ) / ( pL[0] - pR[0] ); B0 = pL[1] - pL[0] * dB;
+	var minX = Math.min( x1, x2, x3 );
+	var minY = Math.min( y1, y2, y3 );
+	var maxX = Math.max( x1, x2, x3 );
+	var maxY = Math.max( y1, y2, y3 );
 
-	// Prepare interpolation calculations
-	x1 = p[0][0];
-	x2 = p[1][0];
-	x3 = p[2][0];
-	y1 = p[0][1];
-	y2 = p[1][1];
-	y3 = p[2][1];
 	var factor = 1.0 / ( (y2-y3)*(x1-x3) + (x3-x2)*(y1-y3) );
 
-	var o, minX, maxX, x1, x2, x3, y1, y2, y3, ic0, ic1, ic2;
-	var minY = Math.floor( Math.min( p[0][1], p[1][1], p[2][1] ) );
-	var maxY = Math.ceil( Math.max( p[0][1], p[1][1], p[2][1] ) );
-	for ( var y = minY; y < maxY; y++ ) {
-		minX = Math.floor( (y-L0)/dL );
-		maxX = Math.ceil( (y-R0)/dR );
-
-		for ( var x = minX; x < maxX; x++ ) {
-			if ( y > x * dB + B0 ) continue;
-
+	var o;
+	for ( var x = minX; x <= maxX; x++ ) {
+		for ( var y = minY; y <= maxY; y++ ) {
 			ic0 = ( (y2-y3)*(x-x3)+(x3-x2)*(y-y3) ) * factor;
+			if ( ic0 < 0 || ic0 > 1 ) continue;
 			ic1 = ( (y3-y1)*(x-x3)+(x1-x3)*(y-y3) ) * factor;
+			if ( ic1 < 0 || ic1 > 1 ) continue;
 			ic2 = 1.0 - ic0 - ic1;
+			if ( ic2 < 0 || ic2 > 1 ) continue;
 
 			o = (x+y*w)*4;
-			data[o+0] = ic0*p[0][3][0] + ic1*p[1][3][0] + ic2*p[2][3][0];
-			data[o+1] = ic0*p[0][3][1] + ic1*p[1][3][1] + ic2*p[2][3][1];
-			data[o+2] = ic0*p[0][3][2] + ic1*p[1][3][2] + ic2*p[2][3][2];
-			data[o+3] = ic0*p[0][3][3] + ic1*p[1][3][3] + ic2*p[2][3][3];
+			data[o+0] = ic0 * 1.0;
+			data[o+1] = ic1 * 1.0;
+			data[o+2] = ic2 * 1.0;
+			data[o+3] = 1.0;
 		}
 	}
 }
