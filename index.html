@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>GLSL demo</title>
+
+		<!-- Basic styles -->
+		<style type="text/css">
+			h1 {
+				margin: 30px 0 10px 30px;
+
+				font-family: sans-serif;
+				font-size: 35px;
+				font-weight: normal;
+			}
+
+			h2 {
+				position: absolute;
+				top: 78px;
+				left: 45px;
+
+				font-family: sans-serif;
+				font-size: 12px;
+				font-weight: bold;
+
+				color: white;
+			}
+
+			canvas {
+				margin-left: 30px;
+
+				border: 1px solid black;
+			}
+		</style>
+
+		<script type="text/javascript" src="gl-matrix.js"></script>
+		<script type="text/javascript" src="jsgl.js"></script>
+	</head>
+
+	<body>
+		<h1>GLSL demo</h1>
+		<h2>FPS: 0</h2>
+
+		<!-- Canvas frame buffer is drawn to -->
+		<canvas width="800" height="600" />
+
+		<script type="text/javascript">
+			// Load 2D canvas context
+			var canvas = document.getElementsByTagName( "canvas" )[0];
+			var ctx = canvas.getContext( "2d" );
+			var w = canvas.width;
+			var h = canvas.height;
+
+			// Create OpenGL context
+			var gl = new GL.Context( w, h );
+			var buf = ctx.createImageData( w, h );
+
+			// Draw animation
+			var frames = 0;
+			setInterval( function()
+			{
+				var t = +new Date() / 1000;
+
+				gl.clearColor( 0.0, 0.0, 0.0, 1.0 );
+				gl.clear( GL.COLOR_BUFFER_BIT );
+
+				gl.matrixMode( GL.MODELVIEW );
+				gl.loadIdentity();
+				var s = (Math.sin(t*7)+1)/3+0.5;
+				gl.scalef( s, s, s );
+
+				gl.begin( GL.TRIANGLES );
+					gl.color3f( 1.0, 0.0, 0.0 );
+					gl.vertex3f( -0.5, -0.5, 0.0 );
+					gl.color3f( 0.0, 0.0, 1.0 );
+					gl.vertex3f( 0.0, 0.5, 0.0 );
+					gl.color3f( 0.0, 1.0, 0.0 );
+					gl.vertex3f( 0.5, -0.5, 0.0 );
+				gl.end();
+
+				// Draw frame buffer to canvas
+				gl.readPixels( 0, 0, w, h, GL.RGBA, GL.BYTE, buf.data );
+				ctx.putImageData( buf, 0, 0 );
+
+				frames++;
+			}, 1 );
+
+			var fps = document.getElementsByTagName( "h2" )[0];
+			setInterval( function() { fps.innerHTML = "FPS: " + frames; frames = 0; }, 1000 );
+		</script>
+	</body>
+</html>
