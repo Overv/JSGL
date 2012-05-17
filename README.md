@@ -4,6 +4,10 @@ JSGL is a software OpenGL 1.1 implementation written in pure Javascript. It does
 
 It was originally developed for usage as official graphics API on [JSOS](https://github.com/charliesome/jsos).
 
+## Todo
+
+- Add perspective correct interpolation
+
 ## Instructions
 
 To use JSGL, you will have to include `gl-matrix.js` and `jsgl.js` in your file in that order. Example for HTML:
