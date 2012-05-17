@@ -125,6 +125,8 @@ These functions are currently implemented:
 These values are available for the parameters of these functions:
 
 	// Begin modes
+	GL.POINTS				= 0x0000;
+	GL.LINES				= 0x0001;
 	GL.TRIANGLES			= 0x0004;
 
 	// Errors

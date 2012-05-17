@@ -28,6 +28,8 @@
 GL = {};
 
 // Begin modes
+GL.POINTS				= 0x0000;
+GL.LINES				= 0x0001;
 GL.TRIANGLES			= 0x0004;
 
 // Errors
@@ -74,7 +76,7 @@ GL.Context = function( w, h )
 
 	// Initialize rest of the state
 	this.bufColorClear = [ 0.0, 0.0, 0.0, 1.0 ];
-	this.beginMode = 0;
+	this.beginMode = -1;
 	this.beginColor = [ 1.0, 1.0, 1.0, 1.0 ];
 	this.vertexBuffer = null;
 };
@@ -85,7 +87,7 @@ GL.Context = function( w, h )
 
 GL.Context.prototype.getError = function()
 {
-	if ( this.beginMode != 0 ) return 0;
+	if ( this.beginMode != -1 ) return 0;
 	return this.err;
 };
 
@@ -98,7 +100,7 @@ GL.Context.prototype.getError = function()
 
 GL.Context.prototype.clearColor = function( r, g, b, a )
 {
-	if ( this.beginMode != 0 ) {
+	if ( this.beginMode != -1 ) {
 		this.err = GL.INVALID_OPERATION;
 		return null;
 	}
@@ -131,11 +133,11 @@ GL.Context.prototype.clear = function( mask )
 
 GL.Context.prototype.begin = function( mode )
 {
-	if ( this.beginMode != 0 ) {
+	if ( this.beginMode != -1 ) {
 		this.err = GL.INVALID_OPERATION;
 		return null;
 	}
-	if ( mode != GL.TRIANGLES ) {
+	if ( mode != GL.POINTS && mode != GL.LINES && mode != GL.TRIANGLES ) {
 		this.err = GL.INVALID_ENUM;
 		return null;
 	}
@@ -150,7 +152,7 @@ GL.Context.prototype.begin = function( mode )
 
 GL.Context.prototype.end = function()
 {
-	if ( this.beginMode == 0 ) {
+	if ( this.beginMode == -1 ) {
 		this.err = GL.INVALID_OPERATION;
 		return null;
 	}
@@ -167,59 +169,15 @@ GL.Context.prototype.end = function()
 		this.beginVertices[i] = vertex;
 	}
 
-	// Assemble shapes
-	// TODO: Make this depend on mode instead of assuming tris
-	// TODO: Bottom side is on top if the triangle is pointing downwards, this needs to be handled!!!
-	// TODO: Left or right line as vertical line not handled!!!
-	for ( var i = 0; i < this.beginVertices.length; i += 3 ) {
-		var p = [ this.beginVertices[i+0], this.beginVertices[i+1], this.beginVertices[i+2] ];
+	// Assemble primitives
+	if ( this.beginMode == GL.POINTS )
+		for ( var i = 0; i < this.beginVertices.length; i += 1 ) drawPoint( this.beginVertices[i], this.bufColor, this.w, this.h );
+	else if ( this.beginMode == GL.LINES )
+		for ( var i = 0; i < this.beginVertices.length; i += 2 ) drawLine( [ this.beginVertices[i], this.beginVertices[i+1] ], this.bufColor, this.w, this.h );
+	else if ( this.beginMode == GL.TRIANGLES )
+		for ( var i = 0; i < this.beginVertices.length; i += 3 ) drawTriangle( [ this.beginVertices[i], this.beginVertices[i+1], this.beginVertices[i+2] ], this.bufColor, this.w, this.h );
 
-		// Find leftmost, middle and rightmost points
-		var pL = 0; if ( p[1][0] < p[pL][0] ) pL = 1; if ( p[2][0] < p[pL][0] ) pL = 2;
-		var pR = 0; if ( p[1][0] > p[pR][0] && pL ) pR = 1; if ( p[2][0] > p[pR][0] ) pR = 2;
-		var pM = 0; if ( pL == 0 || pR == 0 ) pM = 1; if ( pL == 1 || pR == 1 ) pM = 2;
-		pL = p[pL];
-		pR = p[pR];
-		pM = p[pM];
-
-		// Find parameters of left, right and bottom sides
-		dL = ( pL[1] - pM[1] ) / ( pL[0] - pM[0] ); L0 = pL[1] - pL[0] * dL;
-		dR = ( pM[1] - pR[1] ) / ( pM[0] - pR[0] ); R0 = pM[1] - pM[0] * dR;
-		dB = ( pL[1] - pR[1] ) / ( pL[0] - pR[0] ); B0 = pL[1] - pL[0] * dB;
-
-		// Prepare interpolation calculations
-		x1 = p[0][0];
-		x2 = p[1][0];
-		x3 = p[2][0];
-		y1 = p[0][1];
-		y2 = p[1][1];
-		y3 = p[2][1];
-		var factor = 1.0 / ( (y2-y3)*(x1-x3) + (x3-x2)*(y1-y3) );
-
-		var o, minX, maxX, x1, x2, x3, y1, y2, y3, ic0, ic1, ic2;
-		var minY = Math.floor( Math.min( p[0][1], p[1][1], p[2][1] ) );
-		var maxY = Math.ceil( Math.max( p[0][1], p[1][1], p[2][1] ) );
-		for ( var y = minY; y < maxY; y++ ) {
-			minX = Math.floor( (y-L0)/dL );
-			maxX = Math.ceil( (y-R0)/dR );
-
-			for ( var x = minX; x < maxX; x++ ) {
-				if ( y > x * dB + B0 ) continue;
-
-				ic0 = ( (y2-y3)*(x-x3)+(x3-x2)*(y-y3) ) * factor;
-				ic1 = ( (y3-y1)*(x-x3)+(x1-x3)*(y-y3) ) * factor;
-				ic2 = 1.0 - ic0 - ic1;
-
-				o = (x+y*this.w)*4;
-				this.bufColor[o+0] = ic0*p[0][3][0] + ic1*p[1][3][0] + ic2*p[2][3][0];
-				this.bufColor[o+1] = ic0*p[0][3][1] + ic1*p[1][3][1] + ic2*p[2][3][1];
-				this.bufColor[o+2] = ic0*p[0][3][2] + ic1*p[1][3][2] + ic2*p[2][3][2];
-				this.bufColor[o+3] = ic0*p[0][3][3] + ic1*p[1][3][3] + ic2*p[2][3][3];
-			}
-		}
-	}
-
-	this.beginMode = 0;
+	this.beginMode = -1;
 	this.beginVertices = null;
 };
 
@@ -243,7 +201,7 @@ GL.Context.prototype.color3f = function( r, g, b )
 
 GL.Context.prototype.vertex3f = function( x, y, z )
 {
-	if ( this.beginMode == 0 ) {
+	if ( this.beginMode == -1 ) {
 		this.err = GL.INVALID_OPERATION;
 		return null;
 	}
@@ -257,7 +215,7 @@ GL.Context.prototype.vertex3f = function( x, y, z )
 
 GL.Context.prototype.matrixMode = function( mode )
 {
-	if ( this.beginMode != 0 ) {
+	if ( this.beginMode != -1 ) {
 		this.err = GL.INVALID_OPERATION;
 		return null;
 	}
@@ -275,14 +233,12 @@ GL.Context.prototype.matrixMode = function( mode )
 
 GL.Context.prototype.loadIdentity = function()
 {
-	if ( this.beginMode != 0 ) {
+	if ( this.beginMode != -1 ) {
 		this.err = GL.INVALID_OPERATION;
 		return null;
 	}
 
-	console.log( this.curMatrix );
 	mat4.identity( this.curMatrix );
-	console.log( this.curMatrix );
 };
 
 /*
@@ -291,7 +247,7 @@ GL.Context.prototype.loadIdentity = function()
 
 GL.Context.prototype.translatef = function( x, y, z )
 {
-	if ( this.beginMode != 0 ) {
+	if ( this.beginMode != -1 ) {
 		this.err = GL.INVALID_OPERATION;
 		return null;
 	}
@@ -305,7 +261,7 @@ GL.Context.prototype.translatef = function( x, y, z )
 
 GL.Context.prototype.scalef = function( x, y, z )
 {
-	if ( this.beginMode != 0 ) {
+	if ( this.beginMode != -1 ) {
 		this.err = GL.INVALID_OPERATION;
 		return null;
 	}
@@ -319,7 +275,7 @@ GL.Context.prototype.scalef = function( x, y, z )
 
 GL.Context.prototype.rotatef = function( angle, x, y, z )
 {
-	if ( this.beginMode != 0 ) {
+	if ( this.beginMode != -1 ) {
 		this.err = GL.INVALID_OPERATION;
 		return null;
 	}
@@ -336,7 +292,7 @@ GL.Context.prototype.rotatef = function( angle, x, y, z )
 
 GL.Context.prototype.readPixels = function( x, y, w, h, format, type, data )
 {
-	if ( this.beginMode != 0 ) {
+	if ( this.beginMode != -1 ) {
 		this.err = GL.INVALID_OPERATION;
 		return null;
 	}
@@ -358,6 +314,114 @@ GL.Context.prototype.readPixels = function( x, y, w, h, format, type, data )
 		data[i+3] = this.bufColor[i+3] * ( type == GL.BYTE ? 255 : 1 );
 	}
 };
+
+/*
+	Draw a point to the specified pixel array.
+*/
+
+function drawPoint( p, data, w, h )
+{
+	var o = (Math.floor(p[0])+Math.floor(p[1])*w)*4;
+	data[o+0] = p[3][0];
+	data[o+1] = p[3][1];
+	data[o+2] = p[3][2];
+	data[o+3] = p[3][3];
+}
+
+/*
+	Draw a line to the specified pixel array.
+*/
+
+function drawLine( p, data, w, h )
+{
+	var x0 = Math.floor( p[0][0] );
+	var y0 = Math.floor( p[0][1] );
+	var x1 = Math.ceil( p[1][0] );
+	var y1 = Math.ceil( p[1][1] );
+	var dx = Math.abs( x1 - x0 );
+	var dy = Math.abs( y1 - y0 );
+	var sx = x0 < x1 ? 1 : -1;
+	var sy = y0 < y1 ? 1 : -1;
+	var err = dx - dy;
+
+	var totDist = dx > dy ? dx : dy;
+
+	while ( true )
+	{
+		// TODO: Interpolate between p0 and p1
+		var ic0 = 1.0 - Math.abs( dx > dy ? ( x1 - x0 ) : ( y1 - y0 ) ) / totDist;
+		var ic1 = 1.0 - ic0;
+		var o = (x0+y0*w)*4;
+		data[o+0] = ic0 * p[0][3][0] + ic1 * p[1][3][0];
+		data[o+1] = ic0 * p[0][3][1] + ic1 * p[1][3][1];;
+		data[o+2] = ic0 * p[0][3][2] + ic1 * p[1][3][2];;
+		data[o+3] = ic0 * p[0][3][3] + ic1 * p[1][3][3];;
+
+		if ( x0 == x1 && y0 == y1 ) break;
+
+		var e2 = 2*err;
+		if ( e2 > -dy ) {
+			err -= dy;
+			x0 += sx;
+		}
+		if ( e2 < dx ) {
+			err += dx;
+			y0 += sy;
+		}
+	}
+}
+
+/*
+	Draw a triangle to the specified pixel array.
+	TODO: Write a better implementation of this asap.
+*/
+
+function drawTriangle( p, data, w, h )
+{
+	// Find leftmost, middle and rightmost points
+	var pL = 0; if ( p[1][0] < p[pL][0] ) pL = 1; if ( p[2][0] < p[pL][0] ) pL = 2;
+	var pR = 0; if ( p[1][0] > p[pR][0] && pL ) pR = 1; if ( p[2][0] > p[pR][0] ) pR = 2;
+	var pM = 0; if ( pL == 0 || pR == 0 ) pM = 1; if ( pL == 1 || pR == 1 ) pM = 2;
+	pL = p[pL];
+	pR = p[pR];
+	pM = p[pM];
+
+	// Find parameters of left, right and bottom sides
+	dL = ( pL[1] - pM[1] ) / ( pL[0] - pM[0] ); L0 = pL[1] - pL[0] * dL;
+	dR = ( pM[1] - pR[1] ) / ( pM[0] - pR[0] ); R0 = pM[1] - pM[0] * dR;
+	dB = ( pL[1] - pR[1] ) / ( pL[0] - pR[0] ); B0 = pL[1] - pL[0] * dB;
+
+	// Prepare interpolation calculations
+	x1 = p[0][0];
+	x2 = p[1][0];
+	x3 = p[2][0];
+	y1 = p[0][1];
+	y2 = p[1][1];
+	y3 = p[2][1];
+	var factor = 1.0 / ( (y2-y3)*(x1-x3) + (x3-x2)*(y1-y3) );
+
+	var o, minX, maxX, x1, x2, x3, y1, y2, y3, ic0, ic1, ic2;
+	var minY = Math.floor( Math.min( p[0][1], p[1][1], p[2][1] ) );
+	var maxY = Math.ceil( Math.max( p[0][1], p[1][1], p[2][1] ) );
+	for ( var y = minY; y < maxY; y++ ) {
+		minX = Math.floor( (y-L0)/dL );
+		maxX = Math.ceil( (y-R0)/dR );
+
+		for ( var x = minX; x < maxX; x++ ) {
+			if ( y > x * dB + B0 ) continue;
+
+			ic0 = ( (y2-y3)*(x-x3)+(x3-x2)*(y-y3) ) * factor;
+			ic1 = ( (y3-y1)*(x-x3)+(x1-x3)*(y-y3) ) * factor;
+			ic2 = 1.0 - ic0 - ic1;
+
+			o = (x+y*w)*4;
+			data[o+0] = ic0*p[0][3][0] + ic1*p[1][3][0] + ic2*p[2][3][0];
+			data[o+1] = ic0*p[0][3][1] + ic1*p[1][3][1] + ic2*p[2][3][1];
+			data[o+2] = ic0*p[0][3][2] + ic1*p[1][3][2] + ic2*p[2][3][2];
+			data[o+3] = ic0*p[0][3][3] + ic1*p[1][3][3] + ic2*p[2][3][3];
+		}
+	}
+}
 
 /*
 	Clamps a value between 0.0 and 1.0.

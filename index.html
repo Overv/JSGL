@@ -77,6 +77,18 @@
 					gl.vertex3f( 0.5, -0.5, 0.0 );
 				gl.end();
 
+				gl.begin( GL.POINTS );
+					gl.color3f( 1.0, 1.0, 1.0 );
+					gl.vertex3f( -0.1, 0.1, 0.0 );
+				gl.end();
+
+				gl.begin( GL.LINES );
+					gl.color3f( 1.0, 0.0, 0.0 );
+					gl.vertex3f( 0.1, 0.0, 0.0 );
+					gl.color3f( 1.0, 1.0, 0.0 );
+					gl.vertex3f( 0.5, 0.5, 0.0 );
+				gl.end();
+
 				// Draw frame buffer to canvas
 				gl.readPixels( 0, 0, w, h, GL.RGBA, GL.BYTE, buf.data );
 				ctx.putImageData( buf, 0, 0 );
