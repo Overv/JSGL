@@ -287,6 +287,24 @@ GL.Context.prototype.rotatef = function( angle, x, y, z )
 };
 
 /*
+	Sets up a perspective projection matrix.
+*/
+
+GL.Context.prototype.perspective = function( fovy, aspect, near, far )
+{
+	mat4.perspective( fovy, aspect, near, far, this.curMatrix );
+};
+
+/*
+	Defines a viewing transformation.
+*/
+
+GL.Context.prototype.lookAt = function( eyeX, eyeY, eyeZ, centerX, centerY, centerZ, upX, upY, upZ )
+{
+	mat4.lookAt( [ eyeX, eyeY, eyeZ ], [ centerX, centerY, centerZ ], [ upX, upY, upZ ], this.curMatrix );
+};
+
+/*
 	Reads pixels from the color buffer and returns them as an array.
 
 	x, y	Window coordinates of the area you want to capture.

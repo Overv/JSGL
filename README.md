@@ -113,6 +113,21 @@ These functions are currently implemented:
 > **angle**: Angle in radians to rotate by
 > **x, y, z**: Axis to rotate around
 
+### gl.perspective(`fovy`, `aspect`, `near`, `far`)
+> Sets up a perspective projection matrix.
+>
+> **fovy**: Vertical field-of-view
+> **aspect**: Aspect ratio (width / height)
+> **near**: Near clipping plane
+> **far**: Far clipping plane
+
+### gl.lookat(`eyeX`, `eyeY`, `eyeZ`, `centerX`, `centerY`, `centerZ`, `upX`, `upY`, `upZ`)
+> Defines a viewing transformation.
+>
+> **eye**: Eye positon
+> **center**: Focus point
+> **up**: Up direction
+
 ### gl.readPixels(`x`, `y`, `w`, `h`, `format`, `type`, `data`)
 > Reads pixels from the color buffer and returns them as an array.
 >
@@ -128,6 +143,7 @@ These values are available for the parameters of these functions:
 	GL.POINTS				= 0x0000;
 	GL.LINES				= 0x0001;
 	GL.TRIANGLES			= 0x0004;
+	GL.QUADS				= 0x0007;
 
 	// Errors
 	GL.NO_ERROR				= 0x0000;

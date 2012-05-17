@@ -65,9 +65,12 @@
 
 				gl.matrixMode( GL.MODELVIEW );
 				gl.loadIdentity();
+				gl.lookAt( 6.0, 6.0, 10.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0 );
 				gl.rotatef( t, 0.0, 0.0, 1.0 );
-				var s = (Math.sin(t*7)+1)/4+0.2;
-				gl.scalef( s, s, s );
+
+				gl.matrixMode( GL.PROJECTION );
+				gl.loadIdentity();
+				gl.perspective( 90, w/h, 1, 100 );
 
 				gl.begin( GL.QUADS );
 					gl.color3f( 1.0, 0.0, 0.0 );
