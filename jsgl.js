@@ -31,6 +31,7 @@ GL = {};
 GL.POINTS				= 0x0000;
 GL.LINES				= 0x0001;
 GL.TRIANGLES			= 0x0004;
+GL.QUADS				= 0x0007;
 
 // Errors
 GL.NO_ERROR				= 0x0000;
@@ -137,7 +138,7 @@ GL.Context.prototype.begin = function( mode )
 		this.err = GL.INVALID_OPERATION;
 		return null;
 	}
-	if ( mode != GL.POINTS && mode != GL.LINES && mode != GL.TRIANGLES ) {
+	if ( mode != GL.POINTS && mode != GL.LINES && mode != GL.TRIANGLES && mode != GL.QUADS ) {
 		this.err = GL.INVALID_ENUM;
 		return null;
 	}
@@ -172,10 +173,12 @@ GL.Context.prototype.end = function()
 	// Assemble primitives
 	if ( this.beginMode == GL.POINTS )
 		for ( var i = 0; i < this.beginVertices.length; i += 1 ) drawPoint( this.beginVertices[i], this.bufColor, this.w, this.h );
-	else if ( this.beginMode == GL.LINES )
+	else if ( this.beginMode == GL.LINES && this.beginVertices.length >= 2 )
 		for ( var i = 0; i < this.beginVertices.length; i += 2 ) drawLine( [ this.beginVertices[i], this.beginVertices[i+1] ], this.bufColor, this.w, this.h );
-	else if ( this.beginMode == GL.TRIANGLES )
+	else if ( this.beginMode == GL.TRIANGLES && this.beginVertices.length >= 3 )
 		for ( var i = 0; i < this.beginVertices.length; i += 3 ) drawTriangle( [ this.beginVertices[i], this.beginVertices[i+1], this.beginVertices[i+2] ], this.bufColor, this.w, this.h );
+	else if ( this.beginMode == GL.QUADS && this.beginVertices.length >= 4 )
+		for ( var i = 0; i < this.beginVertices.length; i += 4 ) drawQuad( [ this.beginVertices[i], this.beginVertices[i+1], this.beginVertices[i+2], this.beginVertices[i+3] ], this.bufColor, this.w, this.h );
 
 	this.beginMode = -1;
 	this.beginVertices = null;
@@ -401,12 +404,22 @@ function drawTriangle( p, data, w, h )
 			if ( ic2 < 0 || ic2 > 1 ) continue;
 
 			o = (x+y*w)*4;
-			data[o+0] = ic0 * 1.0;
-			data[o+1] = ic1 * 1.0;
-			data[o+2] = ic2 * 1.0;
-			data[o+3] = 1.0;
+			data[o+0] = ic0 * p[0][3][0] + ic1 * p[1][3][0] + ic2 * p[2][3][0];
+			data[o+1] = ic0 * p[0][3][1] + ic1 * p[1][3][1] + ic2 * p[2][3][1];
+			data[o+2] = ic0 * p[0][3][2] + ic1 * p[1][3][2] + ic2 * p[2][3][2];
+			data[o+3] = ic0 * p[0][3][3] + ic1 * p[1][3][3] + ic2 * p[2][3][3];
 		}
 	}
+}
+
+/*
+	Draw a quad to the specified pixel array.
+*/
+
+function drawQuad( p, data, w, h )
+{
+	drawTriangle( [ p[0], p[1], p[2] ], data, w, h );
+	drawTriangle( [ p[2], p[3], p[0] ], data, w, h );
 }
 
 /*

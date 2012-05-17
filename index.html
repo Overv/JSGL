@@ -66,16 +66,18 @@
 				gl.matrixMode( GL.MODELVIEW );
 				gl.loadIdentity();
 				gl.rotatef( t, 0.0, 0.0, 1.0 );
-				var s = (Math.sin(t*7)+1)/3+0.5;
+				var s = (Math.sin(t*7)+1)/4+0.2;
 				gl.scalef( s, s, s );
 
-				gl.begin( GL.TRIANGLES );
+				gl.begin( GL.QUADS );
 					gl.color3f( 1.0, 0.0, 0.0 );
-					gl.vertex3f( -0.5, -0.5, 0.0 );
+					gl.vertex3f( -0.5, 0.5, 0.0 );
 					gl.color3f( 0.0, 0.0, 1.0 );
-					gl.vertex3f( 0.0, 0.5, 0.0 );
+					gl.vertex3f( 0.5, 0.5, 0.0 );
 					gl.color3f( 0.0, 1.0, 0.0 );
 					gl.vertex3f( 0.5, -0.5, 0.0 );
+					gl.color3f( 1.0, 1.0, 0.0 );
+					gl.vertex3f( -0.5, -0.5, 0.0 );
 				gl.end();
 
 				// Draw frame buffer to canvas
