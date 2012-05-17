@@ -39,6 +39,9 @@ GL.INVALID_ENUM			= 0x0500;
 GL.INVALID_VALUE		= 0x0501;
 GL.INVALID_OPERATION	= 0x0502;
 
+// Features
+GL.DEPTH_TEST			= 0x0B71;
+
 // Types
 GL.BYTE					= 0x1400;
 GL.FLOAT				= 0x1406;
@@ -51,7 +54,9 @@ GL.PROJECTION			= 0x1701;
 GL.RGBA					= 0x1908;
 
 // Buffers
+GL.DEPTH_BUFFER_BIT		= 0x0100;
 GL.COLOR_BUFFER_BIT 	= 0x4000;
+
 
 /*
 	Creates a new instance of a software OpenGL 1.1 context.
@@ -66,6 +71,7 @@ GL.Context = function( w, h )
 	this.w = w;
 	this.h = h;
 	this.bufColor = [];
+	this.bufDepth = [];
 
 	// Initialize matrix stack
 	this.matModelView = mat4.create();
@@ -77,9 +83,45 @@ GL.Context = function( w, h )
 
 	// Initialize rest of the state
 	this.bufColorClear = [ 0.0, 0.0, 0.0, 1.0 ];
+	this.bufDepthClear = 1000.0;
+
 	this.beginMode = -1;
 	this.beginColor = [ 1.0, 1.0, 1.0, 1.0 ];
-	this.vertexBuffer = null;
+	this.depthEnabled = false;
+	this.near = 0;
+	this.far = 1;
+};
+
+/*
+	Enables or disables OpenGL capabilities.
+*/
+
+GL.Context.prototype.enable = function( capability )
+{
+	if ( this.beginMode != -1 ) {
+		this.err = GL.INVALID_OPERATION;
+		return null;
+	}
+	if ( capability != GL.DEPTH_TEST ) {
+		this.err = GL.INVALID_ENUM;
+		return null;
+	}
+
+	if ( capability == GL.DEPTH_TEST ) this.depthEnabled = true;
+};
+
+GL.Context.prototype.disable = function( capability )
+{
+	if ( this.beginMode != -1 ) {
+		this.err = GL.INVALID_OPERATION;
+		return null;
+	}
+	if ( capability != GL.DEPTH_TEST ) {
+		this.err = GL.INVALID_ENUM;
+		return null;
+	}
+
+	if ( capability == GL.DEPTH_TEST ) this.depthEnabled = false;
 };
 
 /*
@@ -93,7 +135,7 @@ GL.Context.prototype.getError = function()
 };
 
 /*
-	Set the color buffer clear color.
+	Sets the color buffer clear color.
 
 	r, g, b 	Color components
 	a 			Alpha component
@@ -110,12 +152,26 @@ GL.Context.prototype.clearColor = function( r, g, b, a )
 };
 
 /*
+	Sets the depth buffer clear color.
+*/
+
+GL.Context.prototype.clearDepth = function( depth )
+{
+	if ( this.beginMode != -1 ) {
+		this.err = GL.INVALID_OPERATION;
+		return null;
+	}
+
+	this.bufDepthClear = depth;
+};
+
+/*
 	Clears one or more buffers.
 */
 
 GL.Context.prototype.clear = function( mask )
 {
-	if ( mask - GL.COLOR_BUFFER_BIT > 0 ) {
+	if ( mask - GL.COLOR_BUFFER_BIT - GL.DEPTH_BUFFER_BIT > 0 ) {
 		this.err = GL.INVALID_VALUE;
 		return null;
 	}
@@ -124,6 +180,12 @@ GL.Context.prototype.clear = function( mask )
 		var size = this.w*this.h*4;
 		for ( var i = 0; i < size; i++ ) {
 			this.bufColor[i] = this.bufColorClear[i%4];
+		}
+	}
+	if ( ( mask & GL.DEPTH_BUFFER_BIT ) != 0 ) {
+		var size = this.w*this.h;
+		for ( var i = 0; i < size; i++ ) {
+			this.bufDepth[i] = this.bufDepthClear;
 		}
 	}
 };
@@ -166,19 +228,20 @@ GL.Context.prototype.end = function()
 
 		vertex[0] = (vertex[0]+1)/2*w;
 		vertex[1] = (1-vertex[1])/2*h;
+		vertex[2] = -vertex[2];
 
 		this.beginVertices[i] = vertex;
 	}
 
 	// Assemble primitives
 	if ( this.beginMode == GL.POINTS )
-		for ( var i = 0; i < this.beginVertices.length; i += 1 ) drawPoint( this.beginVertices[i], this.bufColor, this.w, this.h );
+		for ( var i = 0; i < this.beginVertices.length; i += 1 ) drawPoint( this.beginVertices[i], this.bufColor, this.bufDepth, this.w, this.h, this );
 	else if ( this.beginMode == GL.LINES && this.beginVertices.length >= 2 )
-		for ( var i = 0; i < this.beginVertices.length; i += 2 ) drawLine( [ this.beginVertices[i], this.beginVertices[i+1] ], this.bufColor, this.w, this.h );
+		for ( var i = 0; i < this.beginVertices.length; i += 2 ) drawLine( [ this.beginVertices[i], this.beginVertices[i+1] ], this.bufColor, this.bufDepth, this.w, this.h, this );
 	else if ( this.beginMode == GL.TRIANGLES && this.beginVertices.length >= 3 )
-		for ( var i = 0; i < this.beginVertices.length; i += 3 ) drawTriangle( [ this.beginVertices[i], this.beginVertices[i+1], this.beginVertices[i+2] ], this.bufColor, this.w, this.h );
+		for ( var i = 0; i < this.beginVertices.length; i += 3 ) drawTriangle( [ this.beginVertices[i], this.beginVertices[i+1], this.beginVertices[i+2] ], this.bufColor, this.bufDepth, this.w, this.h, this );
 	else if ( this.beginMode == GL.QUADS && this.beginVertices.length >= 4 )
-		for ( var i = 0; i < this.beginVertices.length; i += 4 ) drawQuad( [ this.beginVertices[i], this.beginVertices[i+1], this.beginVertices[i+2], this.beginVertices[i+3] ], this.bufColor, this.w, this.h );
+		for ( var i = 0; i < this.beginVertices.length; i += 4 ) drawQuad( [ this.beginVertices[i], this.beginVertices[i+1], this.beginVertices[i+2], this.beginVertices[i+3] ], this.bufColor, this.bufDepth, this.w, this.h, this );
 
 	this.beginMode = -1;
 	this.beginVertices = null;
@@ -292,6 +355,8 @@ GL.Context.prototype.rotatef = function( angle, x, y, z )
 
 GL.Context.prototype.perspective = function( fovy, aspect, near, far )
 {
+	this.near = near;
+	this.far = far;
 	mat4.perspective( fovy, aspect, near, far, this.curMatrix );
 };
 
@@ -340,9 +405,15 @@ GL.Context.prototype.readPixels = function( x, y, w, h, format, type, data )
 	Draw a point to the specified pixel array.
 */
 
-function drawPoint( p, data, w, h )
+function drawPoint( p, data, depth, w, h, gl )
 {
 	var o = (Math.floor(p[0])+Math.floor(p[1])*w)*4;
+
+	if ( gl.depthEnabled ) {
+		if ( ic0*p[0][2]+ic1*p[1][2]+ic2*p[2][2] > depth[o/4] ) continue;
+		else depth[o/4] = 0.0;
+	}
+
 	data[o+0] = p[3][0];
 	data[o+1] = p[3][1];
 	data[o+2] = p[3][2];
@@ -353,7 +424,7 @@ function drawPoint( p, data, w, h )
 	Draw a line to the specified pixel array.
 */
 
-function drawLine( p, data, w, h )
+function drawLine( p, data, depth, w, h, gl )
 {
 	var x0 = Math.floor( p[0][0] );
 	var y0 = Math.floor( p[0][1] );
@@ -371,11 +442,18 @@ function drawLine( p, data, w, h )
 	{
 		var ic0 = 1.0 - Math.abs( dx > dy ? ( x1 - x0 ) : ( y1 - y0 ) ) / totDist;
 		var ic1 = 1.0 - ic0;
+
 		var o = (x0+y0*w)*4;
+
+		if ( gl.depthEnabled ) {
+			if ( ic0*p[0][2]+ic1*p[1][2]+ic2*p[2][2] > depth[o/4] ) continue;
+			else depth[o/4] = 0.0;
+		}
+
 		data[o+0] = ic0 * p[0][3][0] + ic1 * p[1][3][0];
-		data[o+1] = ic0 * p[0][3][1] + ic1 * p[1][3][1];;
-		data[o+2] = ic0 * p[0][3][2] + ic1 * p[1][3][2];;
-		data[o+3] = ic0 * p[0][3][3] + ic1 * p[1][3][3];;
+		data[o+1] = ic0 * p[0][3][1] + ic1 * p[1][3][1];
+		data[o+2] = ic0 * p[0][3][2] + ic1 * p[1][3][2];
+		data[o+3] = ic0 * p[0][3][3] + ic1 * p[1][3][3];
 
 		if ( x0 == x1 && y0 == y1 ) break;
 
@@ -395,7 +473,7 @@ function drawLine( p, data, w, h )
 	Draw a triangle to the specified pixel array.
 */
 
-function drawTriangle( p, data, w, h )
+function drawTriangle( p, data, depth, w, h, gl )
 {
 	var x1 = Math.floor( p[0][0] );
 	var x2 = Math.floor( p[1][0] );
@@ -422,6 +500,12 @@ function drawTriangle( p, data, w, h )
 			if ( ic2 < 0 || ic2 > 1 ) continue;
 
 			o = (x+y*w)*4;
+
+			if ( gl.depthEnabled ) {
+				if ( ic0*p[0][2]+ic1*p[1][2]+ic2*p[2][2] > depth[o/4] ) continue;
+				else depth[o/4] = 0.0;
+			}
+
 			data[o+0] = ic0 * p[0][3][0] + ic1 * p[1][3][0] + ic2 * p[2][3][0];
 			data[o+1] = ic0 * p[0][3][1] + ic1 * p[1][3][1] + ic2 * p[2][3][1];
 			data[o+2] = ic0 * p[0][3][2] + ic1 * p[1][3][2] + ic2 * p[2][3][2];
@@ -434,10 +518,10 @@ function drawTriangle( p, data, w, h )
 	Draw a quad to the specified pixel array.
 */
 
-function drawQuad( p, data, w, h )
+function drawQuad( p, data, depth, w, h, gl )
 {
-	drawTriangle( [ p[0], p[1], p[2] ], data, w, h );
-	drawTriangle( [ p[2], p[3], p[0] ], data, w, h );
+	drawTriangle( [ p[0], p[1], p[2] ], data, depth, w, h, gl );
+	drawTriangle( [ p[2], p[3], p[0] ], data, depth, w, h, gl );
 }
 
 /*

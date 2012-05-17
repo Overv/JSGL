@@ -52,21 +52,23 @@
 
 			// Create OpenGL context
 			var gl = new GL.Context( w, h );
-			var buf = ctx.createImageData( w, h );
+			gl.enable( GL.DEPTH_TEST );
 
 			// Draw animation
+			var buf = ctx.createImageData( w, h );
 			var frames = 0;
 			setInterval( function()
 			{
 				var t = +new Date() / 1000;
 
 				gl.clearColor( 0.0, 0.0, 0.0, 1.0 );
-				gl.clear( GL.COLOR_BUFFER_BIT );
+				gl.clear( GL.COLOR_BUFFER_BIT | GL.DEPTH_BUFFER_BIT );
 
 				gl.matrixMode( GL.MODELVIEW );
 				gl.loadIdentity();
 				gl.lookAt( 6.0, 6.0, 10.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0 );
 				gl.rotatef( t, 0.0, 0.0, 1.0 );
+				gl.scalef( 0.5, 0.5, 0.5 );
 
 				gl.matrixMode( GL.PROJECTION );
 				gl.loadIdentity();
@@ -75,12 +77,15 @@
 				gl.begin( GL.QUADS );
 					gl.color3f( 1.0, 0.0, 0.0 );
 					gl.vertex3f( -0.5, 0.5, 0.0 );
-					gl.color3f( 0.0, 0.0, 1.0 );
 					gl.vertex3f( 0.5, 0.5, 0.0 );
-					gl.color3f( 0.0, 1.0, 0.0 );
 					gl.vertex3f( 0.5, -0.5, 0.0 );
-					gl.color3f( 1.0, 1.0, 0.0 );
 					gl.vertex3f( -0.5, -0.5, 0.0 );
+
+					gl.color3f( 0.0, 1.0, 0.0 );
+					gl.vertex3f( -0.5, 0.5, -0.5 );
+					gl.vertex3f( 0.5, 0.5, -0.5 );
+					gl.vertex3f( 0.5, -0.5, -0.5 );
+					gl.vertex3f( -0.5, -0.5, -0.5 );
 				gl.end();
 
 				// Draw frame buffer to canvas

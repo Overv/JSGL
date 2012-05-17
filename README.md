@@ -51,14 +51,29 @@ The `w` and `h` here should be the same size as the frame buffer if you need to 
 
 These functions are currently implemented:
 
+### gl.enable(`capability`)
+> Enables OpenGL capabilities.
+>
+> **capability**: Feature to enable
+
+### gl.disable(`capability`)
+> Disables OpenGL capabilities.
+>
+> **capability**: Feature to disable
+
 ### gl.getError()
 > Returns any errors caused by the last function call.
 
 ### gl.clearColor(`r`, `g`, `b`, `a`)
-> Set the color buffer clear color.
+> Sets the color buffer clear color.
 >
 > **r, g, b**: Color components
 > **a**: Alpha component
+
+### gl.clearDepth(`depth`)
+> Sets the depth buffer clear color.
+>
+> **depth**: Depth value
 
 ### gl.clear(`mask`)
 > Clears one or more buffers.
@@ -151,6 +166,9 @@ These values are available for the parameters of these functions:
 	GL.INVALID_VALUE		= 0x0501;
 	GL.INVALID_OPERATION	= 0x0502;
 
+	// Features
+	GL.DEPTH_TEST			= 0x0B71;
+
 	// Types
 	GL.BYTE					= 0x1400;
 	GL.FLOAT				= 0x1406;
@@ -163,6 +181,7 @@ These values are available for the parameters of these functions:
 	GL.RGBA					= 0x1908;
 
 	// Buffers
+	GL.DEPTH_BUFFER_BIT		= 0x0100;
 	GL.COLOR_BUFFER_BIT 	= 0x4000;
 
 More functions and options may be available later.
