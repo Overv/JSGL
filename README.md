@@ -99,6 +99,11 @@ These functions are currently implemented:
 >
 > **r, g, b**: Color components
 
+### gl.texCoord2f(`u`, `v`)
+> Specify a 2D texture coordinate.
+>
+> **u, v**: Texture coordinates
+
 ### gl.vertex3f(`x`, `y`, `z`)
 > Specify a vertex.
 >
@@ -143,6 +148,26 @@ These functions are currently implemented:
 > **center**: Focus point
 > **up**: Up direction
 
+### gl.genTextures(`count`, `buf`)
+> Generate texture objects.
+>
+> **count**: Amount of texture objects to create
+> **buf**: Array to store texture IDs in
+
+### gl.bindTexture(`target`, `id`)
+> Make a texture current.
+>
+> **target**: Target to bind texture to
+> **id**: Texture to bind
+
+### gl.texImage2D(`target`, `width`, `height`, `type`, `data`)
+> Specify the pixels for a texture image.
+>
+> **target**: Target texture
+> **w, h**: Width and height of texture image
+> **type**: Type of values in pixel array
+> **data**: Pixel array
+
 ### gl.readPixels(`x`, `y`, `w`, `h`, `format`, `type`, `data`)
 > Reads pixels from a buffer and returns them as an array.
 >
@@ -169,6 +194,7 @@ These values are available for the parameters of these functions:
 	// Features
 	GL.DEPTH_TEST			= 0x0B71;
 	GL.CULL_FACE			= 0x0B44;
+	GL.TEXTURE_2D			= 0x0DE1;
 
 	// Types
 	GL.BYTE					= 0x1400;
@@ -186,7 +212,20 @@ These values are available for the parameters of these functions:
 	GL.DEPTH_BUFFER_BIT		= 0x0100;
 	GL.COLOR_BUFFER_BIT 	= 0x4000;
 
-More functions and options may be available later.
+More functions and options will be available later.
+
+## Internals
+
+The internal color and depth buffers are stored as flat floating point arrays. The color buffer consists of 4 values per pixel in the RGBA order.
+
+Vertices are stored as an array in this format:
+
+	0: x, y, z
+	3: color (array)
+	4: texture coordinates (array)
+	5: culling visiblity state (boolean, optional)
+
+This format may change during development as new features are added.
 
 ## License
 

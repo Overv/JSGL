@@ -42,6 +42,7 @@ GL.INVALID_OPERATION	= 0x0502;
 // Features
 GL.DEPTH_TEST			= 0x0B71;
 GL.CULL_FACE			= 0x0B44;
+GL.TEXTURE_2D			= 0x0DE1;
 
 // Types
 GL.BYTE					= 0x1400;
@@ -89,8 +90,14 @@ GL.Context = function( w, h )
 
 	this.beginMode = -1;
 	this.beginColor = [ 1.0, 1.0, 1.0, 1.0 ];
+	this.beginTexCoord = [ 0.0, 0.0 ];
+
+	this.textures = [];
+	this.curTexture = 0;
+
 	this.depthEnabled = false;
 	this.cullingEnabled = false;
+	this.textureEnabled = false;
 };
 
 /*
@@ -103,13 +110,14 @@ GL.Context.prototype.enable = function( capability )
 		this.err = GL.INVALID_OPERATION;
 		return null;
 	}
-	if ( capability != GL.DEPTH_TEST && capability != GL.CULL_FACE ) {
+	if ( capability != GL.DEPTH_TEST && capability != GL.CULL_FACE && capability != GL.TEXTURE_2D ) {
 		this.err = GL.INVALID_ENUM;
 		return null;
 	}
 
 	if ( capability == GL.DEPTH_TEST ) this.depthEnabled = true;
 	else if ( capability == GL.CULL_FACE ) this.cullingEnabled = true;
+	else if ( capability == GL.TEXTURE_2D ) this.textureEnabled = true;
 };
 
 GL.Context.prototype.disable = function( capability )
@@ -118,13 +126,14 @@ GL.Context.prototype.disable = function( capability )
 		this.err = GL.INVALID_OPERATION;
 		return null;
 	}
-	if ( capability != GL.DEPTH_TEST && capability != GL.CULL_FACE ) {
+	if ( capability != GL.DEPTH_TEST && capability != GL.CULL_FACE && capability != GL.TEXTURE_2D ) {
 		this.err = GL.INVALID_ENUM;
 		return null;
 	}
 
 	if ( capability == GL.DEPTH_TEST ) this.depthEnabled = false;
 	else if ( capability == GL.CULL_FACE ) this.cullingEnabled = false;
+	else if ( capability == GL.TEXTURE_2D ) this.textureEnabled = false;
 };
 
 /*
@@ -240,7 +249,7 @@ GL.Context.prototype.end = function()
 			var normal = vec3.create();
 			vec3.cross( side1, side2, normal );
 			var dot = vec3.dot( normal, this.beginVertices[i] );
-			vertex[4] = dot <= 0; // If dot > 0, then face is facing away from camera
+			vertex[5] = dot <= 0; // If dot > 0, then face is facing away from camera
 		}
 
 		// Transform vertex into clip space
@@ -288,6 +297,15 @@ GL.Context.prototype.color3f = function( r, g, b )
 };
 
 /*
+	Specify a 2D texture coordinate.
+*/
+
+GL.Context.prototype.texCoord2f = function( u, v )
+{
+	this.beginTexCoord = [ u, v ];
+};
+
+/*
 	Specify a vertex.
 */
 
@@ -298,7 +316,7 @@ GL.Context.prototype.vertex3f = function( x, y, z )
 		return null;
 	}
 
-	this.beginVertices.push( [ x, y, z, this.beginColor ] );
+	this.beginVertices.push( [ x, y, z, this.beginColor, this.beginTexCoord ] );
 };
 
 /*
@@ -394,6 +412,80 @@ GL.Context.prototype.lookAt = function( eyeX, eyeY, eyeZ, centerX, centerY, cent
 };
 
 /*
+	Generate texture objects.
+*/
+
+GL.Context.prototype.genTextures = function( count, buf )
+{
+	if ( this.beginMode != -1 ) {
+		this.err = GL.INVALID_OPERATION;
+		return null;
+	}
+	if ( count < 0 ) {
+		this.err = GL.INVALID_VALUE;
+		return null;
+	}
+
+	for ( var i = 0; i < count; i++ ) {
+		var j = this.textures.length + 1;
+		buf[i] = j;
+		this.textures[j-1] = { pixels: null, w: 0, h: 0 };
+	}
+};
+
+/*
+	Make a texture current.
+*/
+
+GL.Context.prototype.bindTexture = function( target, id )
+{
+	if ( this.beginMode != -1 ) {
+		this.err = GL.INVALID_OPERATION;
+		return null;
+	}
+	if ( target != GL.TEXTURE_2D ) {
+		this.err = GL.INVALID_ENUM;
+		return null;
+	}
+
+	if ( target == GL.TEXTURE_2D ) this.curTexture = id - 1;
+};
+
+/*
+	Specify the pixels for a texture image.
+*/
+
+GL.Context.prototype.texImage2D = function( target, width, height, type, data )
+{
+	if ( this.beginMode != -1 ) {
+		this.err = GL.INVALID_OPERATION;
+		return null;
+	}
+	if ( target != GL.TEXTURE_2D ) {
+		this.err = GL.INVALID_ENUM;
+		return null;
+	}
+	if ( type != GL.BYTE && type != GL.FLOAT ) {
+		this.err = GL.INVALID_ENUM;
+		return null;
+	}
+
+	var texture = this.textures[this.curTexture];
+	if ( texture == undefined ) return;
+	texture.pixels = [];
+	texture.w = width;
+	texture.h = height;
+
+	var size = width*height*4;
+	for ( var i = 0; i < size; i += 4 ) {
+		texture.pixels[i+0] = data[i+0] / ( type == GL.BYTE ? 255 : 1 );
+		texture.pixels[i+1] = data[i+1] / ( type == GL.BYTE ? 255 : 1 );
+		texture.pixels[i+2] = data[i+2] / ( type == GL.BYTE ? 255 : 1 );
+		texture.pixels[i+3] = data[i+3] / ( type == GL.BYTE ? 255 : 1 );
+	}
+};
+
+/*
 	Reads pixels from a buffer and returns them as an array.
 
 	x, y	Window coordinates of the area you want to capture.
@@ -423,7 +515,7 @@ GL.Context.prototype.readPixels = function( x, y, w, h, format, type, data )
 			data[i+2] = this.bufColor[i+2] * ( type == GL.BYTE ? 255 : 1 );
 			data[i+3] = this.bufColor[i+3] * ( type == GL.BYTE ? 255 : 1 );
 		}
-	} else {
+	} else if ( format == GL.DEPTH_COMPONENT ) {
 		var size = this.w*this.h;
 		for ( var i = 0; i < size; i++ )
 			data[i+0] = this.bufDepth[i] * ( type == GL.BYTE ? 255 : 1 );
@@ -504,7 +596,7 @@ function drawLine( p, color, depth, gl )
 
 function drawTriangle( p, color, depth, gl )
 {
-	if ( gl.cullingEnabled && !p[0][4] ) return;
+	if ( gl.cullingEnabled && !p[0][5] ) return;
 
 	var x1 = Math.floor( p[0][0] );
 	var x2 = Math.floor( p[1][0] );
@@ -537,10 +629,33 @@ function drawTriangle( p, color, depth, gl )
 				else depth[o/4] = 0.0;
 			}
 
-			color[o+0] = ic0 * p[0][3][0] + ic1 * p[1][3][0] + ic2 * p[2][3][0];
-			color[o+1] = ic0 * p[0][3][1] + ic1 * p[1][3][1] + ic2 * p[2][3][1];
-			color[o+2] = ic0 * p[0][3][2] + ic1 * p[1][3][2] + ic2 * p[2][3][2];
-			color[o+3] = ic0 * p[0][3][3] + ic1 * p[1][3][3] + ic2 * p[2][3][3];
+			var fragColor = [];
+
+			// Vertex color
+			fragColor[0] = ic0 * p[0][3][0] + ic1 * p[1][3][0] + ic2 * p[2][3][0];
+			fragColor[1] = ic0 * p[0][3][1] + ic1 * p[1][3][1] + ic2 * p[2][3][1];
+			fragColor[2] = ic0 * p[0][3][2] + ic1 * p[1][3][2] + ic2 * p[2][3][2];
+			fragColor[3] = ic0 * p[0][3][3] + ic1 * p[1][3][3] + ic2 * p[2][3][3];
+
+			// Texture sample
+			var tex = gl.textures[gl.curTexture];
+			if ( gl.textureEnabled && tex != undefined ) {
+				var u = ic0 * p[0][4][0] + ic1 * p[1][4][0] + ic2 * p[2][4][0];
+				var v = ic0 * p[0][4][1] + ic1 * p[1][4][1] + ic2 * p[2][4][1];
+				u = Math.floor( u * tex.w ) % tex.w; // This behaviour should later depend on GL_TEXTURE_WRAP_S
+				v = Math.floor( v * tex.h ) % tex.h;
+
+				var to = (u+v*tex.w)*4;
+				fragColor[0] *= tex.pixels[to+0];
+				fragColor[1] *= tex.pixels[to+1];
+				fragColor[2] *= tex.pixels[to+2];
+				fragColor[3] *= tex.pixels[to+3];
+			}
+
+			color[o+0] = fragColor[0];
+			color[o+1] = fragColor[1];
+			color[o+2] = fragColor[2];
+			color[o+3] = fragColor[3];
 		}
 	}
 }
@@ -552,8 +667,8 @@ function drawTriangle( p, color, depth, gl )
 function drawQuad( p, color, depth, gl )
 {
 	if ( gl.cullingEnabled ) {
-		if ( !p[0][4] ) return;
-		p[2][4] = true; // Or drawTriangle will think the second triangle making the quad is culled
+		if ( !p[0][5] ) return;
+		p[2][5] = true; // Or drawTriangle will think the second triangle making the quad is culled
 	}
 
 	drawTriangle( [ p[0], p[1], p[2] ], color, depth, gl );
