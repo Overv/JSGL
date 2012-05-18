@@ -567,17 +567,16 @@ function drawLine( p, color, depth, gl )
 
 		var o = (x0+y0*w)*4;
 
+		var z =  1 / ( ic0*1/p[0][2] + ic1*1/p[1][2] );
 		if ( gl.depthEnabled ) {
-			//var d = ic0*p[0][2]+ic1*p[1][2];
-			var d = 1/(ic0*1/p[0][2]+ic1*1/p[1][2]);
-			if ( d > depth[o/4] ) continue;
-			else depth[o/4] = d;
+			if ( z > depth[o/4] ) continue;
+			else depth[o/4] = z;
 		}
 
-		color[o+0] = ic0 * p[0][3][0] + ic1 * p[1][3][0];
-		color[o+1] = ic0 * p[0][3][1] + ic1 * p[1][3][1];
-		color[o+2] = ic0 * p[0][3][2] + ic1 * p[1][3][2];
-		color[o+3] = ic0 * p[0][3][3] + ic1 * p[1][3][3];
+		color[o+0] = ( ic0*p[0][3][0]/p[0][2] + ic1*p[1][3][0]/p[1][2] ) * z;
+		color[o+1] = ( ic0*p[0][3][1]/p[0][2] + ic1*p[1][3][1]/p[1][2] ) * z;
+		color[o+2] = ( ic0*p[0][3][2]/p[0][2] + ic1*p[1][3][2]/p[1][2] ) * z;
+		color[o+3] = ( ic0*p[0][3][3]/p[0][2] + ic1*p[1][3][3]/p[1][2] ) * z;
 
 		if ( x0 == x1 && y0 == y1 ) break;
 
@@ -627,19 +626,19 @@ function drawTriangle( p, color, depth, gl )
 
 			o = (x+y*w)*4;
 
+			var z = 1 / ( ic0*1/p[0][2] + ic1*1/p[1][2] + ic2*1/p[2][2] );
 			if ( gl.depthEnabled ) {
-				var d = 1/(ic0*1/p[0][2]+ic1*1/p[1][2]+ic2*1/p[2][2]);
-				if ( d > depth[o/4] ) continue;
-				else depth[o/4] = d;
+				if ( z > depth[o/4] ) continue;
+				else depth[o/4] = z;
 			}
 
 			var fragColor = [];
 
 			// Vertex color
-			fragColor[0] = ic0 * p[0][3][0] + ic1 * p[1][3][0] + ic2 * p[2][3][0];
-			fragColor[1] = ic0 * p[0][3][1] + ic1 * p[1][3][1] + ic2 * p[2][3][1];
-			fragColor[2] = ic0 * p[0][3][2] + ic1 * p[1][3][2] + ic2 * p[2][3][2];
-			fragColor[3] = ic0 * p[0][3][3] + ic1 * p[1][3][3] + ic2 * p[2][3][3];
+			fragColor[0] = ( ic0*p[0][3][0]/p[0][2] + ic1*p[1][3][0]/p[1][2] + ic2*p[2][3][0]/p[2][2] ) * z;
+			fragColor[1] = ( ic0*p[0][3][1]/p[0][2] + ic1*p[1][3][1]/p[1][2] + ic2*p[2][3][1]/p[2][2] ) * z;
+			fragColor[2] = ( ic0*p[0][3][2]/p[0][2] + ic1*p[1][3][2]/p[1][2] + ic2*p[2][3][2]/p[2][2] ) * z;
+			fragColor[3] = ( ic0*p[0][3][3]/p[0][2] + ic1*p[1][3][3]/p[1][2] + ic2*p[2][3][3]/p[2][2] ) * z;
 
 			// Texture sample
 			var tex = gl.textures[gl.curTexture];

@@ -71,30 +71,27 @@
 
 				gl.matrixMode( GL.MODELVIEW );
 				gl.loadIdentity();
-				gl.lookAt( 1.1, 1.1, 1.1, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0 );
+				gl.lookAt( 2.0, 2.0, 2.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0 );
+				gl.rotatef( t/2, 0.0, 0.0, 1.0 );
 
 				gl.matrixMode( GL.PROJECTION );
 				gl.loadIdentity();
-				gl.perspective( 90*h/w, w/h, 0.9, 2 );
+				gl.perspective( 90*h/w, w/h, 1, 10 );
 
-				gl.begin( GL.TRIANGLES );
+				gl.begin( GL.QUADS );
+					gl.color3f( 1.0, 0.0, 0.0 );
 					gl.vertex3f( -0.5, 0.5, 0.0 );
+					gl.color3f( 0.0, 1.0, 0.0 );
 					gl.vertex3f( 0.5, 0.5, 0.0 );
+					gl.color3f( 0.0, 0.0, 1.0 );
 					gl.vertex3f( 0.5, -0.5, 0.0 );
+					gl.color3f( 1.0, 1.0, 0.0 );
+					gl.vertex3f( -0.5, -0.5, 0.0 );
 				gl.end();
 
-				// Draw depth buffer to canvas
-				gl.readPixels( 0, 0, w, h, GL.DEPTH_COMPONENT, GL.BYTE, temp );
-				for ( var i = 0; i < temp.length; i++ ) {
-					buf.data[i*4+0] = 255-temp[i];
-					buf.data[i*4+1] = 255-temp[i];
-					buf.data[i*4+2] = 255-temp[i];
-					buf.data[i*4+3] = 255;
-				}
+				// Draw color buffer to canvas
+				gl.readPixels( 0, 0, w, h, GL.RGBA, GL.BYTE, buf.data );
 				ctx.putImageData( buf, 0, 0 );
-
-				//gl.readPixels( 0, 0, w, h, GL.RGBA, GL.BYTE, buf.data );
-				//ctx.putImageData( buf, 0, 0 );
 
 				frames++;
 			}, 1 );
