@@ -536,10 +536,32 @@ function drawPoint( p, color, depth, gl )
 		else depth[o/4] = d;
 	}
 
-	color[o+0] = p[3][0];
-	color[o+1] = p[3][1];
-	color[o+2] = p[3][2];
-	color[o+3] = p[3][3];
+	// Vertex color
+	var fragColor = [];
+	fragColor[0] = p[3][0];
+	fragColor[1] = p[3][1];
+	fragColor[2] = p[3][2];
+	fragColor[3] = p[3][3];
+
+	// Texture sample
+	var tex = gl.textures[gl.curTexture];
+	if ( gl.textureEnabled && tex != undefined ) {
+		var u = p[4][0];
+		var v = p[4][1];
+		u = Math.floor( u * tex.w ) % tex.w; // This behaviour should later depend on GL_TEXTURE_WRAP_S
+		v = Math.floor( v * tex.h ) % tex.h;
+
+		var to = (u+v*tex.w)*4;
+		fragColor[0] *= tex.pixels[to+0];
+		fragColor[1] *= tex.pixels[to+1];
+		fragColor[2] *= tex.pixels[to+2];
+		fragColor[3] *= tex.pixels[to+3];
+	}
+
+	color[o+0] = fragColor[0];
+	color[o+1] = fragColor[1];
+	color[o+2] = fragColor[2];
+	color[o+3] = fragColor[3];
 }
 
 /*
@@ -573,10 +595,32 @@ function drawLine( p, color, depth, gl )
 			else depth[o/4] = z;
 		}
 
-		color[o+0] = ( ic0*p[0][3][0]/p[0][2] + ic1*p[1][3][0]/p[1][2] ) * z;
-		color[o+1] = ( ic0*p[0][3][1]/p[0][2] + ic1*p[1][3][1]/p[1][2] ) * z;
-		color[o+2] = ( ic0*p[0][3][2]/p[0][2] + ic1*p[1][3][2]/p[1][2] ) * z;
-		color[o+3] = ( ic0*p[0][3][3]/p[0][2] + ic1*p[1][3][3]/p[1][2] ) * z;
+		// Vertex color
+		var fragColor = [];
+		fragColor[0] = ( ic0*p[0][3][0]/p[0][2] + ic1*p[1][3][0]/p[1][2] ) * z;
+		fragColor[1] = ( ic0*p[0][3][1]/p[0][2] + ic1*p[1][3][1]/p[1][2] ) * z;
+		fragColor[2] = ( ic0*p[0][3][2]/p[0][2] + ic1*p[1][3][2]/p[1][2] ) * z;
+		fragColor[3] = ( ic0*p[0][3][3]/p[0][2] + ic1*p[1][3][3]/p[1][2] ) * z;
+
+		// Texture sample
+		var tex = gl.textures[gl.curTexture];
+		if ( gl.textureEnabled && tex != undefined ) {
+			var u = ( ic0*p[0][4][0]/p[0][2] + ic1*p[1][4][0]/p[1][2] ) * z;
+			var v = ( ic0*p[0][4][1]/p[0][2] + ic1*p[1][4][1]/p[1][2] ) * z;
+			u = Math.floor( u * tex.w ) % tex.w; // This behaviour should later depend on GL_TEXTURE_WRAP_S
+			v = Math.floor( v * tex.h ) % tex.h;
+
+			var to = (u+v*tex.w)*4;
+			fragColor[0] *= tex.pixels[to+0];
+			fragColor[1] *= tex.pixels[to+1];
+			fragColor[2] *= tex.pixels[to+2];
+			fragColor[3] *= tex.pixels[to+3];
+		}
+
+		color[o+0] = fragColor[0];
+		color[o+1] = fragColor[1];
+		color[o+2] = fragColor[2];
+		color[o+3] = fragColor[3];
 
 		if ( x0 == x1 && y0 == y1 ) break;
 
@@ -632,9 +676,8 @@ function drawTriangle( p, color, depth, gl )
 				else depth[o/4] = z;
 			}
 
-			var fragColor = [];
-
 			// Vertex color
+			var fragColor = [];
 			fragColor[0] = ( ic0*p[0][3][0]/p[0][2] + ic1*p[1][3][0]/p[1][2] + ic2*p[2][3][0]/p[2][2] ) * z;
 			fragColor[1] = ( ic0*p[0][3][1]/p[0][2] + ic1*p[1][3][1]/p[1][2] + ic2*p[2][3][1]/p[2][2] ) * z;
 			fragColor[2] = ( ic0*p[0][3][2]/p[0][2] + ic1*p[1][3][2]/p[1][2] + ic2*p[2][3][2]/p[2][2] ) * z;
@@ -643,8 +686,8 @@ function drawTriangle( p, color, depth, gl )
 			// Texture sample
 			var tex = gl.textures[gl.curTexture];
 			if ( gl.textureEnabled && tex != undefined ) {
-				var u = ic0 * p[0][4][0] + ic1 * p[1][4][0] + ic2 * p[2][4][0];
-				var v = ic0 * p[0][4][1] + ic1 * p[1][4][1] + ic2 * p[2][4][1];
+				var u = ( ic0*p[0][4][0]/p[0][2] + ic1*p[1][4][0]/p[1][2] + ic2*p[2][4][0]/p[2][2] ) * z;
+				var v = ( ic0*p[0][4][1]/p[0][2] + ic1*p[1][4][1]/p[1][2] + ic2*p[2][4][1]/p[2][2] ) * z;
 				u = Math.floor( u * tex.w ) % tex.w; // This behaviour should later depend on GL_TEXTURE_WRAP_S
 				v = Math.floor( v * tex.h ) % tex.h;
 
