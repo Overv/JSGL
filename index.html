@@ -34,6 +34,7 @@
 
 		<script type="text/javascript" src="gl-matrix.js"></script>
 		<script type="text/javascript" src="jsgl.js"></script>
+		<script type="text/javascript" src="grasstexture.js"></script>
 	</head>
 
 	<body>
@@ -53,30 +54,99 @@
 			// Set up OpenGL context
 			var gl = new GL.Context( w, h );
 
+			gl.enable( GL.TEXTURE_2D );
+			gl.enable( GL.DEPTH_TEST );
+
+			gl.clearColor( 0.0, 0.0, 0.0, 1.0 );
+			gl.clearDepth( 1.0 );
+
+			// Load grass texture
+			var tex = [];
+			gl.genTextures( 1, tex );
+			gl.bindTexture( GL.TEXTURE_2D, tex[0] );
+			gl.texImage2D( GL.TEXTURE_2D, 48, 16, GL.FLOAT, grassTexture );
+
 			// Draw animation
 			var buf = ctx.createImageData( w, h );
 			var frames = 0;
-			//setInterval( function()
-			//{
+			setInterval( function()
+			{
 				var t = +new Date() / 1000;
 
-				gl.clearColor( 0.0, 0.0, 0.0, 1.0 );
-				gl.clear( GL.COLOR_BUFFER_BIT );
+				gl.clear( GL.COLOR_BUFFER_BIT | GL.DEPTH_BUFFER_BIT );
 
 				gl.matrixMode( GL.MODELVIEW );
 				gl.loadIdentity();
-				gl.translatef( 0.0, 0.0, -1.0 );
+				gl.lookAt( 2, 2, 2, 0, 0, 0, 0, 0, 1 );
+				gl.rotatef( t/2, 0, 0, 1 );
+				gl.translatef( -0.5, -0.5, -0.2 );
 
 				gl.matrixMode( GL.PROJECTION );
 				gl.loadIdentity();
+				gl.perspective( 90*h/w, w/h, 1, 4 );
 
-				gl.begin( GL.TRIANGLES );
-				    gl.color3f( 1.0, 0.0, 0.0 );
-				    gl.vertex3f( -0.5, -0.5, 0.0 );
-				    gl.color3f( 0.0, 0.0, 1.0 );
-				    gl.vertex3f( 0.0, 0.5, 0.0 );
-				    gl.color3f( 0.0, 1.0, 0.0 );
-				    gl.vertex3f( 0.5, -0.5, 0.0 );
+				gl.begin( GL.QUADS );
+				    gl.color3f( 1, 1, 1 );
+
+				    // Top
+				    gl.texCoord2f( 0.0, 1.0 );
+				    gl.vertex3f( 0, 1, 1 );
+				    gl.texCoord2f( 0.33, 1.0 );
+				    gl.vertex3f( 1, 1, 1 );
+				    gl.texCoord2f( 0.33, 0.0 );
+				    gl.vertex3f( 1, 0, 1 );
+				    gl.texCoord2f( 0.0, 0.0 );
+				    gl.vertex3f( 0, 0, 1 );
+
+				    // Bottom
+				    gl.texCoord2f( 0.66, 1.0 );
+				    gl.vertex3f( 0, 1, 0 );
+				    gl.texCoord2f( 1.0, 1.0 );
+				    gl.vertex3f( 1, 1, 0 );
+				    gl.texCoord2f( 1.0, 0.0 );
+				    gl.vertex3f( 1, 0, 0 );
+				    gl.texCoord2f( 0.66, 0.0 );
+				    gl.vertex3f( 0, 0, 0 );
+
+				    // Front
+				    gl.texCoord2f( 0.34, 0.0 );
+				    gl.vertex3f( 0, 0, 1 );
+				    gl.texCoord2f( 0.66, 0.0 );
+				    gl.vertex3f( 1, 0, 1 );
+				    gl.texCoord2f( 0.66, 0.99 );
+				    gl.vertex3f( 1, 0, 0 );
+				    gl.texCoord2f( 0.34, 0.99 );
+				    gl.vertex3f( 0, 0, 0 );
+
+				    // Back
+				    gl.texCoord2f( 0.34, 0.0 );
+				    gl.vertex3f( 0, 1, 1 );
+				    gl.texCoord2f( 0.66, 0.0 );
+				    gl.vertex3f( 1, 1, 1 );
+				    gl.texCoord2f( 0.66, 0.99 );
+				    gl.vertex3f( 1, 1, 0 );
+				    gl.texCoord2f( 0.34, 0.99 );
+				    gl.vertex3f( 0, 1, 0 );
+
+				    // Left side
+				    gl.texCoord2f( 0.34, 0.0 );
+				    gl.vertex3f( 0, 0, 1 );
+				    gl.texCoord2f( 0.66, 0.0 );
+				    gl.vertex3f( 0, 1, 1 );
+				    gl.texCoord2f( 0.66, 0.99 );
+				    gl.vertex3f( 0, 1, 0 );
+				    gl.texCoord2f( 0.34, 0.99 );
+				    gl.vertex3f( 0, 0, 0 );
+
+				    // Right side
+				    gl.texCoord2f( 0.34, 0.0 );
+				    gl.vertex3f( 1, 0, 1 );
+				    gl.texCoord2f( 0.66, 0.0 );
+				    gl.vertex3f( 1, 1, 1 );
+				    gl.texCoord2f( 0.66, 0.99 );
+				    gl.vertex3f( 1, 1, 0 );
+				    gl.texCoord2f( 0.34, 0.99 );
+				    gl.vertex3f( 1, 0, 0 );
 				gl.end();
 
 				// Draw frame buffer to canvas
@@ -84,7 +154,7 @@
 				ctx.putImageData( buf, 0, 0 );
 
 				frames++;
-			//}, 1 );
+			}, 1 );
 
 			var fps = document.getElementsByTagName( "h2" )[0];
 			setInterval( function() { fps.innerHTML = "FPS: " + frames; frames = 0; }, 1000 );
