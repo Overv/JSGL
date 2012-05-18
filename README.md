@@ -28,6 +28,10 @@ To draw the classic red, blue and green triangle on a black background:
 
 	gl.matrixMode( GL.MODELVIEW );
 	gl.loadIdentity();
+	gl.translatef( 0.0, 0.0, -1.0 );
+
+	gl.matrixMode( GL.PROJECTION );
+	gl.loadIdentity();
 
 	gl.begin( GL.TRIANGLES );
 		gl.color3f( 1.0, 0.0, 0.0 );
