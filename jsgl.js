@@ -531,8 +531,9 @@ function drawPoint( p, color, depth, gl )
 	var o = (Math.floor(p[0])+Math.floor(p[1])*gl.w)*4;
 
 	if ( gl.depthEnabled ) {
-		if ( ic0*p[0][2]+ic1*p[1][2]+ic2*p[2][2] > depth[o/4] ) continue;
-		else depth[o/4] = 0.0;
+		var d = p[2];
+		if ( d > depth[o/4] ) return;
+		else depth[o/4] = d;
 	}
 
 	color[o+0] = p[3][0];
@@ -561,14 +562,16 @@ function drawLine( p, color, depth, gl )
 
 	while ( true )
 	{
-		var ic0 = 1.0 - Math.abs( dx > dy ? ( x1 - x0 ) : ( y1 - y0 ) ) / totDist;
+		var ic0 = Math.abs( dx > dy ? ( x1 - x0 ) : ( y1 - y0 ) ) / totDist;
 		var ic1 = 1.0 - ic0;
 
 		var o = (x0+y0*w)*4;
 
 		if ( gl.depthEnabled ) {
-			if ( ic0*p[0][2]+ic1*p[1][2]+ic2*p[2][2] > depth[o/4] ) continue;
-			else depth[o/4] = 0.0;
+			//var d = ic0*p[0][2]+ic1*p[1][2];
+			var d = 1/(ic0*1/p[0][2]+ic1*1/p[1][2]);
+			if ( d > depth[o/4] ) continue;
+			else depth[o/4] = d;
 		}
 
 		color[o+0] = ic0 * p[0][3][0] + ic1 * p[1][3][0];
@@ -625,8 +628,9 @@ function drawTriangle( p, color, depth, gl )
 			o = (x+y*w)*4;
 
 			if ( gl.depthEnabled ) {
-				if ( ic0*p[0][2]+ic1*p[1][2]+ic2*p[2][2] > depth[o/4] ) continue;
-				else depth[o/4] = 0.0;
+				var d = 1/(ic0*1/p[0][2]+ic1*1/p[1][2]+ic2*1/p[2][2]);
+				if ( d > depth[o/4] ) continue;
+				else depth[o/4] = d;
 			}
 
 			var fragColor = [];

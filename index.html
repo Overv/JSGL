@@ -54,25 +54,14 @@
 			var gl = new GL.Context( w, h );
 
 			gl.enable( GL.DEPTH_TEST );
-			gl.enable( GL.CULL_FACE );
-			gl.enable( GL.TEXTURE_2D );
 
 			gl.clearColor( 0.0, 0.0, 0.0, 1.0 );
 			gl.clearDepth( 1.0 );
 
-			// Load simple texture
-			var tex = [];
-			gl.genTextures( 1, tex );
-			gl.bindTexture( GL.TEXTURE_2D, tex[0] );
-			gl.texImage2D( GL.TEXTURE_2D, 2, 2, GL.FLOAT, [
-				1.0, 0.0, 0.0, 1.0,
-				0.0, 1.0, 0.0, 1.0,
-				0.0, 0.0, 1.0, 1.0,
-				1.0, 1.0, 0.0, 1.0
-			] );
-
 			// Draw animation
 			var buf = ctx.createImageData( w, h );
+			var temp = [];
+
 			var frames = 0;
 			setInterval( function()
 			{
@@ -82,29 +71,30 @@
 
 				gl.matrixMode( GL.MODELVIEW );
 				gl.loadIdentity();
-				gl.lookAt( 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0 );
-				gl.rotatef( t/2, 0.0, 0.0, 1.0 );
+				gl.lookAt( 1.1, 1.1, 1.1, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0 );
 
 				gl.matrixMode( GL.PROJECTION );
 				gl.loadIdentity();
-				gl.perspective( 90*h/w, w/h, 0.1, 10 );
+				gl.perspective( 90*h/w, w/h, 0.9, 2 );
 
-				gl.begin( GL.QUADS );
-					gl.color3f( 1.0, 1.0, 1.0 );
-
-					gl.texCoord2f( 0.0, 0.0 );
+				gl.begin( GL.TRIANGLES );
 					gl.vertex3f( -0.5, 0.5, 0.0 );
-					gl.texCoord2f( 1.0, 0.0 );
 					gl.vertex3f( 0.5, 0.5, 0.0 );
-					gl.texCoord2f( 1.0, 1.0 );
 					gl.vertex3f( 0.5, -0.5, 0.0 );
-					gl.texCoord2f( 0.0, 1.0 );
-					gl.vertex3f( -0.5, -0.5, 0.0 );
 				gl.end();
 
-				// Draw frame buffer to canvas
-				gl.readPixels( 0, 0, w, h, GL.RGBA, GL.BYTE, buf.data );
+				// Draw depth buffer to canvas
+				gl.readPixels( 0, 0, w, h, GL.DEPTH_COMPONENT, GL.BYTE, temp );
+				for ( var i = 0; i < temp.length; i++ ) {
+					buf.data[i*4+0] = 255-temp[i];
+					buf.data[i*4+1] = 255-temp[i];
+					buf.data[i*4+2] = 255-temp[i];
+					buf.data[i*4+3] = 255;
+				}
 				ctx.putImageData( buf, 0, 0 );
+
+				//gl.readPixels( 0, 0, w, h, GL.RGBA, GL.BYTE, buf.data );
+				//ctx.putImageData( buf, 0, 0 );
 
 				frames++;
 			}, 1 );
