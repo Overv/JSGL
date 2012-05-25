@@ -4,9 +4,12 @@ JSGL is a software OpenGL 1.1 implementation written in pure Javascript. It does
 
 It was originally developed for usage as official graphics API on [JSOS](https://github.com/charliesome/jsos).
 
+[Demo](http://dev.vertinode.nl/jsgl/)
+
 ## Todo
 
-- Add perspective correct interpolation
+- Fix backface culling
+- Check if depth values are correct
 
 ## Instructions
 
