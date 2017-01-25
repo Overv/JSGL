@@ -1,6 +1,6 @@
 # JSGL
 
-JSGL is a software OpenGL 1.1 implementation written in pure Javascript. It doesn't rely on environment specific facilities like the 2D canvas in HTML5, but it is included in the example to make the rendered image visible to the user.
+JSGL is a software OpenGL 1.1 implementation written in pure JavaScript. It doesn't rely on environment specific facilities like the 2D canvas in HTML5, but it is included in the example to make the rendered image visible to the user.
 
 It was originally developed for usage as official graphics API on [JSOS](https://github.com/charliesome/jsos).
 
@@ -263,4 +263,4 @@ The library and the example are licensed under the MIT license:
 	OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 	WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-The library depends on the [gl-matrix](https://github.com/toji/gl-matrix) Javascript library for matrix and vector operations, which is licensed under the zlib license. It is included with this project in minified form.
+The library depends on the [gl-matrix](https://github.com/toji/gl-matrix) JavaScript library for matrix and vector operations, which is licensed under the zlib license. It is included with this project in minified form.
